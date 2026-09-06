@@ -1,0 +1,28 @@
+line-length = 88
+target-version = "py313"
+
+[lint]
+select = [
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "TCH",   # flake8-type-checking
+    "RUF",   # ruff-specific rules
+    "S",     # flake8-bandit (security)
+    "PTH",   # flake8-use-pathlib
+    "ERA",   # eradicate
+    "PLW",   # pylint warnings
+]
+ignore = [
+    "S101",      # allow assert in tests
+    "PLW0603",   # allow global statement for singletons
+]
+
+[lint.isort]
+known-first-party = ["app"]
