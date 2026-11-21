@@ -22,7 +22,8 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
+COPY app/ ./app/
 RUN pip install --no-cache-dir --prefix=/install .
 
 
@@ -47,6 +48,7 @@ WORKDIR /app
 COPY app/ ./app/
 COPY migrations/ ./migrations/
 COPY alembic.ini .
+COPY scripts/ ./scripts/
 
 # Set ownership
 RUN chown -R authuser:authuser /app
@@ -61,7 +63,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health/live || exit 1
+    CMD curl -f http://localhost:8000/api/v1/health/live || exit 1
 
 EXPOSE 8000
 
@@ -88,7 +90,8 @@ RUN apt-get update && \
         git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
+COPY app/ ./app/
 RUN pip install --no-cache-dir -e ".[dev]"
 
 COPY . .

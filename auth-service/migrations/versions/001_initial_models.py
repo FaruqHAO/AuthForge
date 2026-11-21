@@ -135,9 +135,7 @@ def upgrade() -> None:
         sa.Column("user_agent", sa.Text(), nullable=True),
         sa.Column("metadata_json", JSONB, nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now(), index=True),
-        sa.Index("ix_audit_logs_event_type", "event_type"),
         sa.Index("ix_audit_logs_user_created", "user_id", "created_at"),
-        sa.Index("ix_audit_logs_created_at", "created_at"),
         comment="Append-only security audit log",
     )
 

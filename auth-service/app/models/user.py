@@ -131,6 +131,7 @@ class User(Base):
     roles: Mapped[list[UserRole]] = relationship(
         "UserRole",
         back_populates="user",
+        foreign_keys="UserRole.user_id",
         lazy="selectin",
         cascade="all, delete-orphan",
     )
@@ -149,6 +150,7 @@ class User(Base):
     audit_logs: Mapped[list[AuditLog]] = relationship(
         "AuditLog",
         back_populates="user",
+        foreign_keys="AuditLog.user_id",
         lazy="dynamic",
     )
 

@@ -15,7 +15,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -293,13 +293,20 @@ class Settings(BaseSettings):
     # Nested settings
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
-    jwt: JWTSettings = Field(default_factory=lambda: JWTSettings(
-        secret_key="change-me-to-another-random-64-char-hex-string"
-    ))
+    jwt: JWTSettings = Field(default_factory=JWTSettings)
     smtp: SMTPSettings = Field(default_factory=SMTPSettings)
     cors: CORSSettings = Field(default_factory=CORSSettings)
     cookie: CookieSettings = Field(default_factory=CookieSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
+
+    @model_validator(mode="after")
+    def validate_deployment_secrets(self) -> Settings:
+        if self.environment in {"staging", "production"}:
+            if self.secret_key.startswith("change-me") or self.jwt.secret_key.startswith("change-me"):
+                raise ValueError("Set unique SECRET_KEY and JWT_SECRET_KEY before deployment")
+            if self.secret_key == self.jwt.secret_key:
+                raise ValueError("SECRET_KEY and JWT_SECRET_KEY must be different")
+        return self
 
     @property
     def is_production(self) -> bool:

@@ -27,10 +27,10 @@ from app.core.config import get_settings
 from app.core.database import Base, get_engine, get_session_factory, init_db
 from app.core.security import hash_password
 
-# Import models (will be created in Phase 2)
-# from app.models.user import User
-# from app.models.role import Role, UserRole
-# from app.models.permission import Permission, RolePermission
+from app.models.user import User
+from app.models.role import Role
+from app.models.permission import Permission
+from app.models.association import UserRole, RolePermission
 
 logger = logging.getLogger(__name__)
 
@@ -111,13 +111,13 @@ async def seed_permissions(session) -> dict[str, int]:
 
         if existing:
             permission_map[perm_data["name"]] = existing.id
-            logger.info("Permission '%s' already exists (id=%d)", perm_data["name"], existing.id)
+            logger.info("Permission '%s' already exists (id=%s)", perm_data["name"], existing.id)
         else:
             permission = Permission(**perm_data)
             session.add(permission)
             await session.flush()
             permission_map[perm_data["name"]] = permission.id
-            logger.info("Created permission '%s' (id=%d)", perm_data["name"], permission.id)
+            logger.info("Created permission '%s' (id=%s)", perm_data["name"], permission.id)
 
     return permission_map
 
@@ -141,7 +141,7 @@ async def seed_roles(session, permission_map: dict[str, int]) -> None:
             )
             session.add(role)
             await session.flush()
-            logger.info("Created role '%s' (id=%d)", role_data["name"], role.id)
+            logger.info("Created role '%s' (id=%s)", role_data["name"], role.id)
 
         # Assign permissions to role
         for perm_name in role_data["permissions"]:
@@ -209,7 +209,7 @@ async def seed_admin_user(session) -> None:
     ur = UserRole(user_id=admin_user.id, role_id=admin_role.id)
     session.add(ur)
 
-    logger.info("Created admin user '%s' (id=%d)", admin_email, admin_user.id)
+    logger.info("Created admin user '%s' (id=%s)", admin_email, admin_user.id)
 
 
 async def main() -> None:

@@ -75,50 +75,28 @@ async def require_authenticated_user(
     return payload
 
 
-async def require_role(
-    required_role: str,
-    payload: dict = Depends(get_current_user_payload),
-) -> dict:
-    """Dependency factory that ensures the user has a specific role.
+def require_role(required_role: str):
+    """Build an async dependency that checks the authenticated user's role."""
+    async def check_role(payload: dict = Depends(get_current_user_payload)) -> dict:
+        if required_role not in payload.get("roles", []):
+            raise InsufficientPermissionsError(
+                message=f"Role '{required_role}' required"
+            )
+        return payload
 
-    Args:
-        required_role: The role name required (e.g., "ADMIN")
-
-    Returns:
-        JWT payload if authorization succeeds
-
-    Raises:
-        InsufficientPermissionsError: If user lacks the required role
-    """
-    user_roles = payload.get("roles", [])
-    if required_role not in user_roles:
-        raise InsufficientPermissionsError(
-            message=f"Role '{required_role}' required"
-        )
-    return payload
+    return check_role
 
 
-async def require_permission(
-    required_permission: str,
-    payload: dict = Depends(get_current_user_payload),
-) -> dict:
-    """Dependency factory that ensures the user has a specific permission.
+def require_permission(required_permission: str):
+    """Build an async dependency that checks the required permission."""
+    async def check_permission(payload: dict = Depends(get_current_user_payload)) -> dict:
+        if required_permission not in payload.get("permissions", []):
+            raise PermissionDeniedError(
+                message=f"Permission '{required_permission}' required"
+            )
+        return payload
 
-    Args:
-        required_permission: The permission name (e.g., "users.delete")
-
-    Returns:
-        JWT payload if authorization succeeds
-
-    Raises:
-        PermissionDeniedError: If user lacks the required permission
-    """
-    user_permissions = payload.get("permissions", [])
-    if required_permission not in user_permissions:
-        raise PermissionDeniedError(
-            message=f"Permission '{required_permission}' required"
-        )
-    return payload
+    return check_permission
 
 
 def get_user_id_from_payload(payload: dict) -> uuid.UUID:

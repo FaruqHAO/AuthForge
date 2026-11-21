@@ -104,9 +104,7 @@ class AuditLog(Base):
 
     # ── Indexes ──────────────────────────────────────────────────────────
     __table_args__ = (
-        Index("ix_audit_logs_event_type", "event_type"),
         Index("ix_audit_logs_user_created", "user_id", "created_at"),
-        Index("ix_audit_logs_created_at", "created_at"),
         {"comment": "Append-only security audit log"},
     )
 

@@ -1,0 +1,89 @@
+# Dokploy: Docker Compose (not Stack), repository root, this compose file.
+# Configure the api service's domain and port 8000 through Dokploy's Domains tab.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_DB: auth_db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Dokploy}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  api:
+    build:
+      context: ./auth-service
+      dockerfile: docker/Dockerfile
+      target: production
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in Dokploy}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in Dokploy}
+      DATABASE_URL: postgresql+asyncpg://auth_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Dokploy}@postgres:5432/auth_db
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: '${CORS_ALLOWED_ORIGINS:-["https://auth.baosat.dpdns.org"]}'
+      COOKIE_ENABLED: "false"
+      COOKIE_SECURE: "true"
+      COOKIE_DOMAIN: auth.baosat.dpdns.org
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    # One container runs schema upgrades before starting its HTTP workers.
+    # Do not scale this service until migration execution is separated.
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        alembic upgrade head &&
+        python -m scripts.seed_roles_permissions &&
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - backend
+      - dokploy-network
+    labels:
+      - traefik.docker.network=dokploy-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  backend:
+  dokploy-network:
+    external: true
